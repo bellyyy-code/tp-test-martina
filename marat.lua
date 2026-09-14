@@ -1,122 +1,219 @@
 local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
 
--- Create a ScreenGui for the player list
-local screenGui = Instance.new("ScreenGui")
-screenGui.Parent = playerGui
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local Mouse = LocalPlayer:GetMouse()
 
--- Create a ScrollingFrame to hold the player usernames (scrollable frame)
-local userFrame = Instance.new("ScrollingFrame")
-userFrame.Size = UDim2.new(0, 300, 0, 400)
-userFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
-userFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Black background
-userFrame.BackgroundTransparency = 0.5 -- Semi-transparent background
-userFrame.BorderSizePixel = 0 -- No border
-userFrame.ScrollBarThickness = 10 -- Thickness of the scrollbar
-userFrame.Visible = true
-userFrame.Parent = screenGui
-userFrame.CanvasSize = UDim2.new(0, 0, 0, 0) -- We'll adjust this dynamically
+local VERSION = "v2.5"
 
--- Create a UIListLayout to arrange player usernames vertically in the scrollable frame
-local listLayout = Instance.new("UIListLayout")
-listLayout.Parent = userFrame
+-- Настройки (Config)
+local Config = {
+    Aimbot = false,
+    AimbotKey = Enum.UserInputType.MouseButton2, -- ПКМ
+    AimbotSmooth = 5,
+    BoxESP = false,
+    SkeletonESP = false,
+    Fullbright = false
+}
 
--- Function to populate usernames
-local function populateUsernames()
-    -- Clear any existing buttons before populating
-    for _, child in ipairs(userFrame:GetChildren()) do
-        if child:IsA("TextButton") then
-            child:Destroy()
+-- Главный GUI
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ScriptSenseMainGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game:GetService("CoreGui")
+
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 320, 0, 360)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -180)
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.BackgroundTransparency = 1
+MainFrame.Parent = ScreenGui
+
+-- Анимация появления (Fade-in)
+TweenService:Create(MainFrame, TweenInfo.new(0.6, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {BackgroundTransparency = 0.05}):Play()
+
+-- Заголовок с анимированным текстом
+local TitleBar = Instance.new("Frame")
+TitleBar.Size = UDim2.new(1, 0, 0, 35)
+TitleBar.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+TitleBar.BorderSizePixel = 0
+TitleBar.Parent = MainFrame
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -35, 1, 0)
+Title.Position = UDim2.new(0, 10, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "SCRIPTSENSE [" .. VERSION .. "]"
+Title.TextColor3 = Color3.fromRGB(255, 60, 60)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 16
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = TitleBar
+
+-- Эффект переливания цвета заголовка
+task.spawn(function()
+    while true do
+        for i = 0, 1, 0.01 do
+            Title.TextColor3 = Color3.fromHSV(i, 0.8, 1)
+            task.wait(0.05)
         end
     end
+end)
 
-    -- Create a button for each player
-    for _, otherPlayer in ipairs(Players:GetPlayers()) do
-        if otherPlayer ~= player then -- Don't include yourself
-            local playerButton = Instance.new("TextButton")
-            playerButton.Size = UDim2.new(1, 0, 0, 50) -- Full width, 50 height
-            playerButton.Text = otherPlayer.Name
-            playerButton.TextColor3 = Color3.fromRGB(255, 255, 255) -- White text
-            playerButton.BackgroundTransparency = 1 -- Fully transparent background
-            playerButton.BorderSizePixel = 0 -- No border
-            playerButton.Parent = userFrame
+local CloseButton = Instance.new("TextButton")
+CloseButton.Position = UDim2.new(1, -35, 0, 0)
+CloseButton.Size = UDim2.new(0, 35, 0, 35)
+CloseButton.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+CloseButton.BorderSizePixel = 0
+CloseButton.Text = "X"
+CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseButton.Font = Enum.Font.SourceSansBold
+CloseButton.TextSize = 16
+CloseButton.Parent = TitleBar
 
-            -- Teleport to the player when clicked
-            playerButton.MouseButton1Click:Connect(function()
-                if otherPlayer.Character and otherPlayer.Character:FindFirstChild("HumanoidRootPart") then
-                    player.Character:MoveTo(otherPlayer.Character.HumanoidRootPart.Position) -- Teleport to the player
-                end
-            end)
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+-- Контейнер опций
+local Container = Instance.new("ScrollingFrame")
+Container.Size = UDim2.new(1, -20, 1, -50)
+Container.Position = UDim2.new(0, 10, 0, 42)
+Container.BackgroundTransparency = 1
+Container.BorderSizePixel = 0
+Container.ScrollBarThickness = 4
+Container.CanvasSize = UDim2.new(0, 0, 0, 280)
+Container.Parent = MainFrame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Padding = UDim.new(0, 8)
+UIListLayout.Parent = Container
+
+-- Функция создания кнопки-тогла
+local function CreateToggle(name, callback)
+    local ToggleBtn = Instance.new("TextButton")
+    ToggleBtn.Size = UDim2.new(1, 0, 0, 40)
+    ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+    ToggleBtn.BorderSizePixel = 0
+    ToggleBtn.Text = name .. ": OFF"
+    ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ToggleBtn.Font = Enum.Font.SourceSansBold
+    ToggleBtn.TextSize = 15
+    ToggleBtn.Parent = Container
+
+    local state = false
+    ToggleBtn.MouseButton1Click:Connect(function()
+        state = not state
+        if state then
+            ToggleBtn.Text = name .. ": ON"
+            ToggleBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 0)
+        else
+            ToggleBtn.Text = name .. ": OFF"
+            ToggleBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
         end
-    end
-
-    -- Adjust the canvas size of the scrollable frame based on the number of players
-    userFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
+        callback(state)
+    end)
 end
 
--- Populate usernames initially
-populateUsernames()
-
--- Update usernames when a player joins or leaves
-Players.PlayerAdded:Connect(function()
-    wait(0.1) -- Wait a moment for the new player to fully join
-    populateUsernames()
+-- Создание функционала в меню
+CreateToggle("Aimbot", function(state)
+    Config.Aimbot = state
 end)
 
-Players.PlayerRemoving:Connect(function()
-    wait(0.1) -- Wait a moment for the player to leave
-    populateUsernames()
+CreateToggle("White Box ESP", function(state)
+    Config.BoxESP = state
 end)
 
--- Create a ScreenGui for the control buttons (exit and open)
-local controlGui = Instance.new("ScreenGui")
-controlGui.Parent = playerGui
-
--- Create the "Open" button
-local openButton = Instance.new("TextButton")
-openButton.Size = UDim2.new(0, 100, 0, 50)
-openButton.Position = UDim2.new(0, 10, 0, 10) -- Top left corner
-openButton.Text = "Open"
-openButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0) -- Green background
-openButton.TextColor3 = Color3.fromRGB(255, 255, 255) -- White text
-openButton.Parent = controlGui
-openButton.Visible = false -- Initially hidden (since the GUI is already open)
-
--- Create a UICorner for rounded corners on the "Open" button
-local openButtonCorner = Instance.new("UICorner")
-openButtonCorner.CornerRadius = UDim.new(0, 12) -- Adjust for softer corners
-openButtonCorner.Parent = openButton
-
--- Create the "Exit" button
-local exitButton = Instance.new("TextButton")
-exitButton.Size = UDim2.new(0, 100, 0, 50)
-exitButton.Position = UDim2.new(0, 10, 0, 10) -- Top left corner (same position as the Open button)
-exitButton.Text = "Exit"
-exitButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0) -- Red background
-exitButton.TextColor3 = Color3.fromRGB(255, 255, 255) -- White text
-exitButton.Parent = controlGui
-
--- Create a UICorner for rounded corners on the "Exit" button
-local exitButtonCorner = Instance.new("UICorner")
-exitButtonCorner.CornerRadius = UDim.new(0, 12) -- Adjust for softer corners
-exitButtonCorner.Parent = exitButton
-
--- Close the GUI when the Exit button is clicked, and show the Open button
-exitButton.MouseButton1Click:Connect(function()
-    userFrame.Visible = false -- Hide the player list
-    exitButton.Visible = false -- Hide the Exit button
-    openButton.Visible = true -- Show the Open button
+CreateToggle("White Skeleton ESP", function(state)
+    Config.SkeletonESP = state
 end)
 
--- Open the GUI when the Open button is clicked, and show the Exit button
-openButton.MouseButton1Click:Connect(function()
-    userFrame.Visible = true -- Show the player list
-    exitButton.Visible = true -- Show the Exit button
-    openButton.Visible = false -- Hide the Open button
+CreateToggle("Fullbright", function(state)
+    Config.Fullbright = state
+    if state then
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
+        Lighting.GlobalShadows = false
+    else
+        Lighting.GlobalShadows = true
+    end
 end)
 
--- Adjust the canvas size whenever the layout changes (like when players join/leave)
-listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    userFrame.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y)
-end) 
+-- Поиск ближайшего игрока для Aimbot
+local function GetClosestPlayer()
+    local target = nil
+    local shortestDist = math.huge
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChildOfClass("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local rootPart = player.Character.HumanoidRootPart
+            local screenPos, onScreen = Camera:WorldToViewportPoint(rootPart.Position)
+            if onScreen then
+                local dist = (Vector2.new(screenPos.X, screenPos.Y) - Vector2.new(Mouse.X, Mouse.Y)).Magnitude
+                if dist < shortestDist then
+                    shortestDist = dist
+                    target = player.Character.HumanoidRootPart
+                end
+            end
+        end
+    end
+    return target
+end
+
+-- Логика Aimbot
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if input.UserInputType == Config.AimbotKey then
+        Config.AimbotHolding = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Config.AimbotKey then
+        Config.AimbotHolding = false
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if Config.Aimbot and Config.AimbotHolding then
+        local targetRoot = GetClosestPlayer()
+        if targetRoot then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetRoot.Position)
+        end
+    end
+    
+    -- Белый Box ESP в реальном времени
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character then
+            local char = player.Character
+            local root = char:FindFirstChild("HumanoidRootPart")
+            if root and Config.BoxESP then
+                if not char:FindFirstChild("ScriptSenseBox") then
+                    local box = Instance.new("BoxHandleAdornment")
+                    box.Name = "ScriptSenseBox"
+                    box.Adornee = root
+                    box.AlwaysOnTop = true
+                    box.Size = Vector3.new(3, 5, 3)
+                    box.Color3 = Color3.fromRGB(255, 255, 255)
+                    box.Transparency = 0.5
+                    box.Parent = char
+                end
+            else
+                local box = char:FindFirstChild("ScriptSenseBox")
+                if box then box:Destroy() end
+            end
+        end
+    end
+end)
+
+game:GetService("StarterGui"):SetCore("SendNotification", {
+    Title = "ScriptSense",
+    Text = "Loaded Successfully " .. VERSION,
+    Duration = 3
+})

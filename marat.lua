@@ -1,129 +1,127 @@
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
 
--- Wait a moment to ensure StarterGui is ready
-task.wait(1)
+local gui = Instance.new("ScreenGui")
+gui.Name = "PlayerButtonsGui"
+gui.Parent = game:GetService("CoreGui")
 
--- Safely send purple chat message
-local StarterGui = game:GetService("StarterGui")
-pcall(function()
-    StarterGui:SetCore("ChatMakeSystemMessage", {
-        Text = "Thanks for using script! Credit ThatBoiledOne on YT if you wanna showcase. Have fun!";
-        Color = Color3.fromRGB(170, 0, 255); -- Purple color
-        Font = Enum.Font.SourceSansBold;
-        TextSize = 18;
-    })
-end)
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 400)
+frame.Position = UDim2.new(0, 10, 0, 10)
+frame.BackgroundColor3 = Color3.fromRGB(53, 53, 53)
+frame.BorderColor3 = Color3.fromRGB(34, 34, 34)
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
 
--- Create GUI
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Parent = game.CoreGui
-ScreenGui.Name = "TPGui"
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 20, 0, 20)
+closeButton.Position = UDim2.new(0, 5, 0, 5)
+closeButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+closeButton.Text = "X"
+closeButton.Parent = frame
 
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 450, 0, 350)
-MainFrame.Position = UDim2.new(0.5, -225, 0.5, -175)
-MainFrame.BackgroundColor3 = Color3.fromRGB(245, 245, 245)
-MainFrame.BorderSizePixel = 0
-MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-MainFrame.ClipsDescendants = true
-MainFrame.BackgroundTransparency = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
-MainFrame.Name = "MainFrame"
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Size = UDim2.new(0, 20, 0, 20)
+minimizeButton.Position = UDim2.new(1, -25, 0, 5)
+minimizeButton.BackgroundColor3 = Color3.fromRGB(255, 102, 102)
+minimizeButton.Text = "-"
+minimizeButton.Parent = frame
 
-local UICorner = Instance.new("UICorner", MainFrame)
-UICorner.CornerRadius = UDim.new(0, 12)
+local scrollingFrame = Instance.new("ScrollingFrame")
+scrollingFrame.Size = UDim2.new(1, -10, 1, -30)
+scrollingFrame.Position = UDim2.new(0, 5, 0, 25)
+scrollingFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollingFrame.Parent = frame
+scrollingFrame.BackgroundTransparency = 1
 
-local Title = Instance.new("TextLabel", MainFrame)
-Title.Size = UDim2.new(1, 0, 0, 50)
-Title.Text = "🚀 TP GUI v1"
-Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-Title.TextColor3 = Color3.fromRGB(255, 255, 255)
-Title.Font = Enum.Font.GothamBold
-Title.TextScaled = true
-
-local PlayerListFrame = Instance.new("ScrollingFrame", MainFrame)
-PlayerListFrame.Size = UDim2.new(0.9, 0, 0.6, 0)
-PlayerListFrame.Position = UDim2.new(0.05, 0, 0.18, 0)
-PlayerListFrame.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-PlayerListFrame.BorderSizePixel = 0
-PlayerListFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
-PlayerListFrame.ScrollBarThickness = 8
-
-local UICorner2 = Instance.new("UICorner", PlayerListFrame)
-UICorner2.CornerRadius = UDim.new(0, 8)
-
-local UIListLayout = Instance.new("UIListLayout", PlayerListFrame)
-UIListLayout.FillDirection = Enum.FillDirection.Vertical
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
-UIListLayout.Padding = UDim.new(0, 5)
-
-local TeleportButton = Instance.new("TextButton", MainFrame)
-TeleportButton.Size = UDim2.new(0.8, 0, 0.1, 0)
-TeleportButton.Position = UDim2.new(0.1, 0, 0.85, 0)
-TeleportButton.Text = "Teleport to Selected Player"
-TeleportButton.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-TeleportButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-TeleportButton.Font = Enum.Font.GothamSemibold
-TeleportButton.TextScaled = true
-
-local UICorner3 = Instance.new("UICorner", TeleportButton)
-UICorner3.CornerRadius = UDim.new(0, 8)
-
-local SelectedPlayer = nil
-
--- Populate player list
-local function RefreshPlayerList()
-    for _, child in ipairs(PlayerListFrame:GetChildren()) do
-        if child:IsA("TextButton") then
-            child:Destroy()
-        end
-    end
-
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer then
-            local PlayerButton = Instance.new("TextButton", PlayerListFrame)
-            PlayerButton.Size = UDim2.new(1, -10, 0, 40)
-            PlayerButton.Text = player.Name
-            PlayerButton.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-            PlayerButton.TextColor3 = Color3.fromRGB(0, 0, 0)
-            PlayerButton.Font = Enum.Font.Gotham
-            PlayerButton.TextScaled = true
-            PlayerButton.BorderSizePixel = 0
-
-            local btnCorner = Instance.new("UICorner", PlayerButton)
-            btnCorner.CornerRadius = UDim.new(0, 6)
-
-            PlayerButton.MouseButton1Click:Connect(function()
-                -- Unhighlight others
-                for _, other in ipairs(PlayerListFrame:GetChildren()) do
-                    if other:IsA("TextButton") then
-                        other.BackgroundColor3 = Color3.fromRGB(230, 230, 230)
-                    end
-                end
-                PlayerButton.BackgroundColor3 = Color3.fromRGB(0, 255, 0)
-                SelectedPlayer = player
-            end)
-        end
-    end
-
-    -- Update scroll size
-    task.wait(0.1)
-    PlayerListFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+local function teleportPlayer(targetPlayer)
+    LocalPlayer.Character.HumanoidRootPart.CFrame = targetPlayer.Character.HumanoidRootPart.CFrame
 end
 
-RefreshPlayerList()
+local function createButton(player)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, 0, 0, 30)
+    button.Position = UDim2.new(0, 0, 0, (#scrollingFrame:GetChildren() * 40))
+    button.BackgroundColor3 = Color3.fromRGB(34, 139, 34)
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.Font = Enum.Font.Gotham
+    button.TextSize = 12
+    button.Text = player.Name
+    button.TextWrapped = true
+    button.TextXAlignment = Enum.TextXAlignment.Left
+    button.Parent = scrollingFrame
 
-Players.PlayerAdded:Connect(RefreshPlayerList)
-Players.PlayerRemoving:Connect(RefreshPlayerList)
+    local loopTpButton = Instance.new("TextButton")
+    loopTpButton.Size = UDim2.new(0.5, -5, 1, 0)
+    loopTpButton.Position = UDim2.new(0.5, 5, 0, 0)
+    loopTpButton.BackgroundColor3 = Color3.fromRGB(139, 34, 34)
+    loopTpButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    loopTpButton.Font = Enum.Font.Gotham
+    loopTpButton.TextSize = 10
+    loopTpButton.Text = "Loop TP"
+    loopTpButton.TextWrapped = true
+    loopTpButton.TextXAlignment = Enum.TextXAlignment.Center
+    loopTpButton.Parent = button
 
-TeleportButton.MouseButton1Click:Connect(function()
-    if SelectedPlayer and SelectedPlayer.Character and SelectedPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-        local root = char:FindFirstChild("HumanoidRootPart")
-        if root then
-            root.CFrame = SelectedPlayer.Character.HumanoidRootPart.CFrame + Vector3.new(2, 0, 2)
+    local isLoopTpEnabled = false
+    local loopTpConnection
+
+    loopTpButton.MouseButton1Click:Connect(function()
+        if not isLoopTpEnabled then
+            loopTpButton.Text = "Stop TP"
+            loopTpConnection = RunService.RenderStepped:Connect(function()
+                if LocalPlayer.Character and player.Character then
+                    teleportPlayer(player)
+                end
+            end)
+            isLoopTpEnabled = true
+        else
+            loopTpButton.Text = "Loop TP"
+            loopTpConnection:Disconnect()
+            isLoopTpEnabled = false
+        end
+    end)
+
+    button.MouseButton1Click:Connect(function()
+        if not isLoopTpEnabled then
+            teleportPlayer(player)
+        end
+    end)
+end
+
+for _, player in ipairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        createButton(player)
+    end
+end
+
+Players.PlayerAdded:Connect(function(player)
+    createButton(player)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    local buttons = scrollingFrame:GetChildren()
+    for _, button in ipairs(buttons) do
+        if button:IsA("TextButton") and button.Text == player.Name then
+            button:Destroy()
         end
     end
+end)
+
+minimizeButton.MouseButton1Click:Connect(function()
+    if frame.Size == UDim2.new(0, 300, 0, 400) then
+        frame.Size = UDim2.new(0, 30, 0, 30)
+        minimizeButton.Text = "+"
+        minimizeButton.Position = UDim2.new(1, -25, 0, 5)
+    else
+        frame.Size = UDim2.new(0, 300, 0, 400)
+        minimizeButton.Text = "-"
+        minimizeButton.Position = UDim2.new(1, -25, 0, 5)
+    end
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    gui:Destroy()
 end)

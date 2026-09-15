@@ -1,74 +1,41 @@
-local Players = game:GetService("Players")
-local userInputService = game:GetService("UserInputService")
-local player = Players.LocalPlayer
-
--- Variables
-local autoJumpEnabled = false
-local jumpInterval = 0.07 -- Set the interval to 0.07 seconds
+-- Auto-exec script with PlaceId check + small GUI
+local slapBattlesId = 6403373529
 
 -- Create GUI
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "AutoJumpGui"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = player:WaitForChild("PlayerGui")
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local TextLabel = Instance.new("TextLabel")
 
--- Frame for GUI
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 250, 0, 150)
-frame.Position = UDim2.new(0.85, 0, 0.1, 0)
-frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-frame.Draggable = true
-frame.Active = true
-frame.Parent = screenGui
+ScreenGui.Parent = game:GetService("CoreGui")
+Frame.Parent = ScreenGui
+TextLabel.Parent = Frame
 
--- Title Label
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 30)
-title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-title.Text = "Auto Jump"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Font = Enum.Font.SourceSansBold
-title.TextSize = 14
-title.Parent = frame
+-- Style GUI
+Frame.Size = UDim2.new(0, 250, 0, 100)
+Frame.Position = UDim2.new(0.5, -125, 0.5, -50)
+Frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Frame.BorderSizePixel = 0
 
--- Toggle Button
-local toggleBtn = Instance.new("TextButton")
-toggleBtn.Size = UDim2.new(0.8, 0, 0, 30)
-toggleBtn.Position = UDim2.new(0.1, 0, 0.2, 0)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-toggleBtn.Text = "Enable Auto Jump"
-toggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-toggleBtn.Font = Enum.Font.SourceSans
-toggleBtn.TextSize = 16
-toggleBtn.Parent = frame
+TextLabel.Size = UDim2.new(1, 0, 1, 0)
+TextLabel.BackgroundTransparency = 1
+TextLabel.Text = "Checking if Slap Battles..."
+TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel.TextScaled = true
+TextLabel.Font = Enum.Font.GothamBold
 
--- Interval Label
-local intervalLabel = Instance.new("TextLabel")
-intervalLabel.Size = UDim2.new(1, 0, 0, 30)
-intervalLabel.Position = UDim2.new(0, 0, 0.4, 0)
-intervalLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-intervalLabel.Text = "Jump Interval: " .. jumpInterval
-intervalLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-intervalLabel.Font = Enum.Font.SourceSans
-intervalLabel.TextSize = 14
-intervalLabel.Parent = frame
+-- Wait 3 seconds before checking
+task.wait(3)
 
--- Toggle Auto Jump Function
-local function toggleAutoJump()
-    autoJumpEnabled = not autoJumpEnabled
-    toggleBtn.Text = autoJumpEnabled and "Disable Auto Jump" or "Enable Auto Jump"
+-- Check PlaceId
+if game.PlaceId == slapBattlesId then
+    TextLabel.Text = "Slap Battles found! Loading..."
+    task.wait(1)
+    ScreenGui:Destroy()
     
-    if autoJumpEnabled then
-        while autoJumpEnabled do
-            -- Wait for the specified interval and jump
-            if player.Character and player.Character:FindFirstChild("Humanoid") then
-                local humanoid = player.Character.Humanoid
-                humanoid.Jump = true -- Trigger the jump
-            end
-            wait(jumpInterval) -- Wait for the next interval before jumping again
-        end
-    end
+    -- Run your script
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ZulimaDoma/ZuluGrowAGarden/refs/heads/main/SlapBattle"))()
+else
+    TextLabel.Text = "Not Slap Battles. Closing..."
+    task.wait(1.5)
+    ScreenGui:Destroy()
 end
-
--- Toggle Button Click Event
-toggleBtn.MouseButton1Click:Connect(toggleAutoJump)
